@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(pnpm install:*)"
+    ]
+  }
+}
