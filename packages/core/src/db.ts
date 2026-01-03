@@ -2,8 +2,15 @@ import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js'
 
 export type Database = SqlJsDatabase
 
+// Detect if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
 export async function createDatabase(): Promise<Database> {
-  const SQL = await initSqlJs()
+  const SQL = await initSqlJs(
+    isBrowser
+      ? { locateFile: (file: string) => `https://sql.js.org/dist/${file}` }
+      : undefined
+  )
   const db = new SQL.Database()
 
   db.run(`
