@@ -16,7 +16,12 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "sql.js": "^1.10.0",
+    "uuid": "^9.0.1"
+  },
   "devDependencies": {
+    "@types/uuid": "^9.0.8",
     "vitest": "^2.0.0"
   }
 }
