@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
 import { useDatabase } from './hooks/useDatabase'
 import { useNotes } from './hooks/useNotes'
+import { useSearch } from './hooks/useSearch'
 import { NoteInput } from './components/NoteInput'
 import { NoteCard } from './components/NoteCard'
+import { SearchBar } from './components/SearchBar'
 
 export default function App() {
   const { db, loading: dbLoading, error } = useDatabase()
   const { notes, loading: notesLoading, add, remove, refresh } = useNotes(db)
+  const { results, loading: searchLoading, search, clear } = useSearch(db)
 
   useEffect(() => {
     if (db) refresh()
@@ -32,6 +35,8 @@ export default function App() {
     )
   }
 
+  const displayNotes = results ? results.map((r) => r.note) : notes
+
   return (
     <div className="max-w-2xl mx-auto p-4 pb-20">
       <header className="mb-6">
@@ -39,17 +44,27 @@ export default function App() {
         <p className="text-amber-700">Quick notes, AI organized</p>
       </header>
 
-      <div className="mb-8">
+      <div className="mb-4">
         <NoteInput onSubmit={add} disabled={notesLoading} />
       </div>
 
-      {notes.length === 0 ? (
+      <div className="mb-6">
+        <SearchBar onSearch={search} onClear={clear} loading={searchLoading} />
+      </div>
+
+      {results && (
+        <p className="text-sm text-amber-600 mb-4">
+          Found {results.length} result{results.length !== 1 ? 's' : ''}
+        </p>
+      )}
+
+      {displayNotes.length === 0 ? (
         <p className="text-center text-amber-400 py-12">
-          No notes yet. Jot something down!
+          {results ? 'No matching notes found.' : 'No notes yet. Jot something down!'}
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {notes.map((note) => (
+          {displayNotes.map((note) => (
             <NoteCard key={note.id} note={note} onDelete={remove} />
           ))}
         </div>
