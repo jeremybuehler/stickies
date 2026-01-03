@@ -148,14 +148,12 @@ export function getClusters(db: Database): Cluster[] {
   )
   if (!result[0]) return []
 
-  return result[0].values.map(
-    ([id, name, description, noteIds, createdAt, updatedAt]) => ({
-      id: id as string,
-      name: name as string,
-      description: (description as string | null) ?? undefined,
-      noteIds: JSON.parse(noteIds as string),
-      createdAt: createdAt as number,
-      updatedAt: updatedAt as number,
-    })
-  )
+  return result[0].values.map((row) => ({
+    id: row[0] as string,
+    name: row[1] as string,
+    description: (row[2] as string | null) ?? undefined,
+    noteIds: JSON.parse(row[3] as string),
+    createdAt: row[4] as number,
+    updatedAt: row[5] as number,
+  }))
 }

@@ -58,16 +58,14 @@ export function getAllNotes(db: Database): Note[] {
 
   if (!result[0]) return []
 
-  return result[0].values.map(
-    ([id, content, source, rawTranscript, createdAt, updatedAt]) => ({
-      id: id as string,
-      content: content as string,
-      source: source as 'text' | 'voice',
-      rawTranscript: (rawTranscript as string | null) ?? undefined,
-      createdAt: createdAt as number,
-      updatedAt: updatedAt as number,
-    })
-  )
+  return result[0].values.map((row) => ({
+    id: row[0] as string,
+    content: row[1] as string,
+    source: row[2] as 'text' | 'voice',
+    rawTranscript: (row[3] as string | null) ?? undefined,
+    createdAt: row[4] as number,
+    updatedAt: row[5] as number,
+  }))
 }
 
 export function deleteNote(db: Database, id: string): void {

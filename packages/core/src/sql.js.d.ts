@@ -1,0 +1,24 @@
+declare module 'sql.js' {
+  export interface SqlValue {
+    [key: string]: unknown
+  }
+
+  export interface QueryExecResult {
+    columns: string[]
+    values: unknown[][]
+  }
+
+  export interface Database {
+    run(sql: string, params?: unknown[]): void
+    exec(sql: string, params?: unknown[]): QueryExecResult[]
+    close(): void
+  }
+
+  export interface SqlJsStatic {
+    Database: new (data?: ArrayLike<number>) => Database
+  }
+
+  export default function initSqlJs(config?: {
+    locateFile?: (filename: string) => string
+  }): Promise<SqlJsStatic>
+}
