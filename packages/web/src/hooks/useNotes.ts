@@ -20,17 +20,14 @@ export function useNotes(db: Database | null) {
   }, [db])
 
   const add = useCallback(
-    async (content: string) => {
+    async (content: string, source: 'text' | 'voice' = 'text') => {
       if (!db) return
       setLoading(true)
       try {
-        createNote(db, content)
+        createNote(db, content, source)
 
         // Save to IndexedDB for persistence
         await saveDatabase(db)
-
-        // Note: Embedding indexing disabled until Vite + transformers.js compatibility is resolved
-        // TODO: Re-enable with web worker solution
 
         refresh()
       } finally {
