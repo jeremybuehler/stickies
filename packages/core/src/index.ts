@@ -1,4 +1,4 @@
-export { createDatabase, type Database } from './db'
+export { createDatabase, saveDatabase, type Database } from './db'
 export { createNote, getNote, getAllNotes, deleteNote, type Note } from './notes'
 export { generateEmbedding, cosineSimilarity } from './embeddings'
 export { indexNote, searchNotes, type SearchResult } from './search'

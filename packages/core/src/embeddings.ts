@@ -1,15 +1,41 @@
-import { pipeline, type FeatureExtractionPipeline } from '@xenova/transformers'
+import { pipeline, env } from '@huggingface/transformers'
 
-let extractor: FeatureExtractionPipeline | null = null
+// Configure for browser: use remote models from HuggingFace Hub CDN
+env.allowLocalModels = false
+env.useBrowserCache = true
+env.remoteHost = 'https://huggingface.co'
+env.remotePathTemplate = '{model}/resolve/{revision}/'
 
-async function getExtractor(): Promise<FeatureExtractionPipeline> {
-  if (!extractor) {
-    extractor = await pipeline(
-      'feature-extraction',
-      'Xenova/all-MiniLM-L6-v2'
-    )
-  }
-  return extractor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let extractor: any = null
+let loadingPromise: Promise<any> | null = null
+let loadFailed = false
+
+async function getExtractor() {
+  if (loadFailed) throw new Error('Model loading previously failed')
+  if (extractor) return extractor
+
+  // Prevent multiple simultaneous loads
+  if (loadingPromise) return loadingPromise
+
+  console.log('[Embeddings] Loading model from Hugging Face Hub...')
+
+  loadingPromise = (pipeline as any)(
+    'feature-extraction',
+    'Xenova/all-MiniLM-L6-v2',
+    { dtype: 'fp32' }
+  ).then((ext: any) => {
+    console.log('[Embeddings] Model loaded successfully')
+    extractor = ext
+    return ext
+  }).catch((err: Error) => {
+    console.error('[Embeddings] Model loading failed:', err.message)
+    loadFailed = true
+    loadingPromise = null
+    throw err
+  })
+
+  return loadingPromise
 }
 
 export async function generateEmbedding(text: string): Promise<Float32Array> {

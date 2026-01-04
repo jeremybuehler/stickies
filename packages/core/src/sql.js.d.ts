@@ -11,6 +11,7 @@ declare module 'sql.js' {
   export interface Database {
     run(sql: string, params?: unknown[]): void
     exec(sql: string, params?: unknown[]): QueryExecResult[]
+    export(): Uint8Array
     close(): void
   }
 

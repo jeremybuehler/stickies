@@ -27,4 +27,10 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    exclude: ['@huggingface/transformers'],
+  },
+  build: {
+    target: 'esnext',
+  },
 })

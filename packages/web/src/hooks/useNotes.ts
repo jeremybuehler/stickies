@@ -3,7 +3,7 @@ import {
   createNote,
   getAllNotes,
   deleteNote,
-  indexNote,
+  saveDatabase,
   type Database,
   type Note,
 } from '@stickies/core'
@@ -22,12 +22,13 @@ export function useNotes(db: Database | null) {
       if (!db) return
       setLoading(true)
       try {
-        const note = createNote(db, content)
+        createNote(db, content)
 
-        // Index in background - don't block UI
-        indexNote(db, note).catch((err) => {
-          console.error('Indexing failed:', err)
-        })
+        // Save to IndexedDB for persistence
+        await saveDatabase(db)
+
+        // Note: Embedding indexing disabled until Vite + transformers.js compatibility is resolved
+        // TODO: Re-enable with web worker solution
 
         refresh()
       } finally {
@@ -38,9 +39,10 @@ export function useNotes(db: Database | null) {
   )
 
   const remove = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!db) return
       deleteNote(db, id)
+      await saveDatabase(db)
       refresh()
     },
     [db, refresh]

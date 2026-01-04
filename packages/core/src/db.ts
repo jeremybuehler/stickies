@@ -5,13 +5,67 @@ export type Database = SqlJsDatabase
 // Detect if we're in a browser environment
 const isBrowser = typeof window !== 'undefined'
 
+const DB_NAME = 'stickies-db'
+const DB_STORE = 'database'
+const DB_KEY = 'main'
+
+// IndexedDB helpers for persistence
+function openIndexedDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result)
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(DB_STORE)
+    }
+  })
+}
+
+export async function saveDatabase(db: Database): Promise<void> {
+  if (!isBrowser) return
+
+  const data = db.export()
+  const idb = await openIndexedDB()
+
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(DB_STORE, 'readwrite')
+    const store = tx.objectStore(DB_STORE)
+    const request = store.put(data, DB_KEY)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve()
+    tx.oncomplete = () => idb.close()
+  })
+}
+
+async function loadDatabaseData(): Promise<Uint8Array | null> {
+  if (!isBrowser) return null
+
+  try {
+    const idb = await openIndexedDB()
+
+    return new Promise((resolve, reject) => {
+      const tx = idb.transaction(DB_STORE, 'readonly')
+      const store = tx.objectStore(DB_STORE)
+      const request = store.get(DB_KEY)
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => resolve(request.result || null)
+      tx.oncomplete = () => idb.close()
+    })
+  } catch {
+    return null
+  }
+}
+
 export async function createDatabase(): Promise<Database> {
   const SQL = await initSqlJs(
     isBrowser
       ? { locateFile: (file: string) => `https://sql.js.org/dist/${file}` }
       : undefined
   )
-  const db = new SQL.Database()
+
+  // Try to load existing database from IndexedDB
+  const existingData = await loadDatabaseData()
+  const db = existingData ? new SQL.Database(existingData) : new SQL.Database()
 
   db.run(`
     CREATE TABLE IF NOT EXISTS notes (
