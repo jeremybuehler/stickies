@@ -4,6 +4,7 @@ import {
   getAllNotes,
   updateNote,
   deleteNote,
+  reorderNotes,
   saveDatabase,
   type Database,
   type Note,
@@ -57,5 +58,15 @@ export function useNotes(db: Database | null) {
     [db, refresh]
   )
 
-  return { notes, loading, add, update, remove, refresh }
+  const reorder = useCallback(
+    async (noteIds: string[]) => {
+      if (!db) return
+      reorderNotes(db, noteIds)
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
+  return { notes, loading, add, update, remove, reorder, refresh }
 }

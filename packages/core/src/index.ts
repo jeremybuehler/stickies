@@ -1,5 +1,5 @@
 export { createDatabase, saveDatabase, type Database } from './db'
-export { createNote, getNote, getAllNotes, updateNote, deleteNote, type Note, type NoteColor } from './notes'
+export { createNote, getNote, getAllNotes, updateNote, deleteNote, reorderNotes, type Note, type NoteColor } from './notes'
 export { generateEmbedding, cosineSimilarity } from './embeddings'
 export { indexNote, searchNotes, type SearchResult } from './search'
 export { clusterNotes, getClusters, type Cluster } from './clustering'

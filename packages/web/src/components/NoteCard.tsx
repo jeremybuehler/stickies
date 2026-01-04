@@ -6,6 +6,14 @@ interface Props {
   onUpdate?: (id: string, updates: { content?: string; color?: NoteColor }) => void
   onDelete?: (id: string) => void
   span?: 1 | 2
+  isDragging?: boolean
+  isDragOver?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: () => void
+  onDragEnter?: (e: React.DragEvent) => void
+  onDragLeave?: (e: React.DragEvent) => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
 }
 
 const colorMap: Record<NoteColor, string> = {
@@ -32,13 +40,28 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
-export function NoteCard({ note, onUpdate, onDelete, span = 1 }: Props) {
+export function NoteCard({
+  note,
+  onUpdate,
+  onDelete,
+  span = 1,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragEnd,
+  onDragEnter,
+  onDragLeave,
+  onDragOver,
+  onDrop,
+}: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(note.content)
   const [showColors, setShowColors] = useState(false)
 
   const spanClass = span === 2 ? 'col-span-2' : ''
   const bgColor = colorMap[note.color] || colorMap.yellow
+  const dragClass = isDragging ? 'opacity-50 scale-95' : ''
+  const dragOverClass = isDragOver ? 'ring-2 ring-amber-500 ring-offset-2' : ''
 
   const handleSave = () => {
     if (editContent.trim() && editContent !== note.content) {
@@ -54,8 +77,15 @@ export function NoteCard({ note, onUpdate, onDelete, span = 1 }: Props) {
 
   return (
     <div
-      className={`${bgColor} ${spanClass} p-4 rounded-lg shadow-md
-                  hover:shadow-lg transition-shadow relative group`}
+      draggable={!isEditing}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`${bgColor} ${spanClass} ${dragClass} ${dragOverClass} p-4 rounded-lg shadow-md
+                  hover:shadow-lg transition-all relative group cursor-grab active:cursor-grabbing`}
     >
       {isEditing ? (
         <div>

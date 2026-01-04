@@ -86,6 +86,19 @@ export async function createDatabase(): Promise<Database> {
     // Column already exists, ignore
   }
 
+  // Migration: add position column if it doesn't exist
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN position INTEGER NOT NULL DEFAULT 0`)
+    // Set initial positions based on created_at order
+    db.run(`
+      UPDATE notes SET position = (
+        SELECT COUNT(*) FROM notes n2 WHERE n2.created_at > notes.created_at
+      )
+    `)
+  } catch {
+    // Column already exists, ignore
+  }
+
   db.run(`
     CREATE TABLE IF NOT EXISTS embeddings (
       note_id TEXT PRIMARY KEY,

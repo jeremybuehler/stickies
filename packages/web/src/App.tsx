@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useDatabase } from './hooks/useDatabase'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
@@ -8,12 +8,75 @@ import { SearchBar } from './components/SearchBar'
 
 export default function App() {
   const { db, loading: dbLoading, error } = useDatabase()
-  const { notes, loading: notesLoading, add, update, remove, refresh } = useNotes(db)
+  const { notes, loading: notesLoading, add, update, remove, reorder, refresh } = useNotes(db)
   const { results, loading: searchLoading, search, clear } = useSearch(db)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const dragCounter = useRef(0)
 
   useEffect(() => {
     if (db) refresh()
   }, [db, refresh])
+
+  const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    setDraggedId(noteId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', noteId)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedId(null)
+    setDragOverId(null)
+    dragCounter.current = 0
+  }
+
+  const handleDragEnter = (e: React.DragEvent, noteId: string) => {
+    e.preventDefault()
+    dragCounter.current++
+    if (noteId !== draggedId) {
+      setDragOverId(noteId)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setDragOverId(null)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    dragCounter.current = 0
+
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null)
+      setDragOverId(null)
+      return
+    }
+
+    const currentNotes = results ? results.map((r) => r.note) : notes
+    const noteIds = currentNotes.map((n) => n.id)
+    const fromIndex = noteIds.indexOf(draggedId)
+    const toIndex = noteIds.indexOf(targetId)
+
+    if (fromIndex === -1 || toIndex === -1) return
+
+    // Reorder the array
+    const newOrder = [...noteIds]
+    newOrder.splice(fromIndex, 1)
+    newOrder.splice(toIndex, 0, draggedId)
+
+    await reorder(newOrder)
+    setDraggedId(null)
+    setDragOverId(null)
+  }
 
   if (error) {
     return (
@@ -76,6 +139,14 @@ export default function App() {
               onUpdate={update}
               onDelete={remove}
               span={getSpan(note.content)}
+              isDragging={draggedId === note.id}
+              isDragOver={dragOverId === note.id}
+              onDragStart={(e) => handleDragStart(e, note.id)}
+              onDragEnd={handleDragEnd}
+              onDragEnter={(e) => handleDragEnter(e, note.id)}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, note.id)}
             />
           ))}
         </div>
