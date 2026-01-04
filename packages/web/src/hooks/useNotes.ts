@@ -23,7 +23,12 @@ export function useNotes(db: Database | null) {
       setLoading(true)
       try {
         const note = createNote(db, content)
-        await indexNote(db, note)
+
+        // Index in background - don't block UI
+        indexNote(db, note).catch((err) => {
+          console.error('Indexing failed:', err)
+        })
+
         refresh()
       } finally {
         setLoading(false)
