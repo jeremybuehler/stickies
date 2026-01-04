@@ -71,12 +71,20 @@ export async function createDatabase(): Promise<Database> {
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
       content TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT 'yellow',
       source TEXT NOT NULL DEFAULT 'text',
       raw_transcript TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
   `)
+
+  // Migration: add color column if it doesn't exist (for existing databases)
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN color TEXT NOT NULL DEFAULT 'yellow'`)
+  } catch {
+    // Column already exists, ignore
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS embeddings (

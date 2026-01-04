@@ -8,7 +8,7 @@ import { SearchBar } from './components/SearchBar'
 
 export default function App() {
   const { db, loading: dbLoading, error } = useDatabase()
-  const { notes, loading: notesLoading, add, remove, refresh } = useNotes(db)
+  const { notes, loading: notesLoading, add, update, remove, refresh } = useNotes(db)
   const { results, loading: searchLoading, search, clear } = useSearch(db)
 
   useEffect(() => {
@@ -73,6 +73,7 @@ export default function App() {
             <NoteCard
               key={note.id}
               note={note}
+              onUpdate={update}
               onDelete={remove}
               span={getSpan(note.content)}
             />

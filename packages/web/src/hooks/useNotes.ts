@@ -2,10 +2,12 @@ import { useState, useCallback } from 'react'
 import {
   createNote,
   getAllNotes,
+  updateNote,
   deleteNote,
   saveDatabase,
   type Database,
   type Note,
+  type NoteColor,
 } from '@stickies/core'
 
 export function useNotes(db: Database | null) {
@@ -38,6 +40,16 @@ export function useNotes(db: Database | null) {
     [db, refresh]
   )
 
+  const update = useCallback(
+    async (id: string, updates: { content?: string; color?: NoteColor }) => {
+      if (!db) return
+      updateNote(db, id, updates)
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
   const remove = useCallback(
     async (id: string) => {
       if (!db) return
@@ -48,5 +60,5 @@ export function useNotes(db: Database | null) {
     [db, refresh]
   )
 
-  return { notes, loading, add, remove, refresh }
+  return { notes, loading, add, update, remove, refresh }
 }
