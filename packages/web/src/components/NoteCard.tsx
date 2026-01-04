@@ -3,6 +3,7 @@ import type { Note } from '@stickies/core'
 interface Props {
   note: Note
   onDelete?: (id: string) => void
+  span?: 1 | 2
 }
 
 const colors = [
@@ -32,10 +33,12 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
-export function NoteCard({ note, onDelete }: Props) {
+export function NoteCard({ note, onDelete, span = 1 }: Props) {
+  const spanClass = span === 2 ? 'col-span-2' : ''
+
   return (
     <div
-      className={`${getColor(note.id)} p-4 rounded-lg shadow-md
+      className={`${getColor(note.id)} ${spanClass} p-4 rounded-lg shadow-md
                   hover:shadow-lg transition-shadow relative group`}
     >
       <p className="text-gray-800 whitespace-pre-wrap break-words">

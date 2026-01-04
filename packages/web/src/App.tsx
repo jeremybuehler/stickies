@@ -37,6 +37,11 @@ export default function App() {
 
   const displayNotes = results ? results.map((r) => r.note) : notes
 
+  // Determine if a note should span 2 columns based on content length
+  const getSpan = (content: string): 1 | 2 => {
+    return content.length > 80 ? 2 : 1
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4 pb-20">
       <header className="mb-6">
@@ -63,9 +68,14 @@ export default function App() {
           {results ? 'No matching notes found.' : 'No notes yet. Jot something down!'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {displayNotes.map((note) => (
-            <NoteCard key={note.id} note={note} onDelete={remove} />
+            <NoteCard
+              key={note.id}
+              note={note}
+              onDelete={remove}
+              span={getSpan(note.content)}
+            />
           ))}
         </div>
       )}
