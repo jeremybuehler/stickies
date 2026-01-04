@@ -1,16 +1,10 @@
 import type { Database } from './db'
 import type { Note } from './notes'
-import { generateEmbedding, cosineSimilarity } from './embeddings'
 import { getAllNotes } from './notes'
 
-export async function indexNote(db: Database, note: Note): Promise<void> {
-  const vector = await generateEmbedding(note.content)
-  const buffer = Buffer.from(vector.buffer)
-
-  db.run(
-    `INSERT OR REPLACE INTO embeddings (note_id, vector) VALUES (?, ?)`,
-    [note.id, buffer]
-  )
+export async function indexNote(_db: Database, _note: Note): Promise<void> {
+  // Embedding indexing disabled until Vite + transformers.js compatibility is resolved
+  // TODO: Re-enable with web worker solution
 }
 
 export interface SearchResult {
@@ -18,29 +12,39 @@ export interface SearchResult {
   score: number
 }
 
+// Simple text-based search (case-insensitive)
 export async function searchNotes(
   db: Database,
   query: string,
   limit = 10
 ): Promise<SearchResult[]> {
-  const queryVector = await generateEmbedding(query)
   const notes = getAllNotes(db)
+  const queryLower = query.toLowerCase().trim()
+
+  if (!queryLower) return []
 
   const results: SearchResult[] = []
+  const queryWords = queryLower.split(/\s+/)
 
   for (const note of notes) {
-    const embResult = db.exec(
-      `SELECT vector FROM embeddings WHERE note_id = ?`,
-      [note.id]
-    )
+    const contentLower = note.content.toLowerCase()
 
-    if (!embResult[0]?.values[0]) continue
+    // Calculate score based on word matches
+    let matchedWords = 0
+    for (const word of queryWords) {
+      if (contentLower.includes(word)) {
+        matchedWords++
+      }
+    }
 
-    const buffer = embResult[0].values[0][0] as Uint8Array
-    const noteVector = new Float32Array(buffer.buffer)
-    const score = cosineSimilarity(queryVector, noteVector)
-
-    results.push({ note, score })
+    if (matchedWords > 0) {
+      // Score: percentage of query words matched + boost for exact phrase match
+      let score = matchedWords / queryWords.length
+      if (contentLower.includes(queryLower)) {
+        score += 0.5 // Boost for exact phrase match
+      }
+      results.push({ note, score })
+    }
   }
 
   return results
