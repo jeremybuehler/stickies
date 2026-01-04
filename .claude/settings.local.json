@@ -3,7 +3,23 @@
     "allow": [
       "Skill(superpowers:brainstorming)",
       "Skill(superpowers:subagent-driven-development)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm --filter @stickies/core build:*)",
+      "Bash(git -C /Users/buehlerdev/code/stickies status)",
+      "Bash(git -C /Users/buehlerdev/code/stickies diff .claude/settings.local.json)",
+      "Bash(git -C /Users/buehlerdev/code/stickies add packages/web/ pnpm-lock.yaml)",
+      "Bash(git -C /Users/buehlerdev/code/stickies commit -m \"$\\(cat <<''EOF''\nfeat: add web PWA with React + Vite + Tailwind\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(pnpm --filter @stickies/core test:*)",
+      "mcp__plugin_episodic-memory_episodic-memory__search",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm --filter @stickies/web build:*)",
+      "Bash(pnpm --filter @stickies/core list:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Skill(superpowers:systematic-debugging)",
+      "mcp__playwright__browser_type",
+      "mcp__plugin_superpowers-chrome_chrome__use_browser"
     ]
   }
 }
