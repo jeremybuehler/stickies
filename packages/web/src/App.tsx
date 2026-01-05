@@ -11,6 +11,9 @@ import { AuthForm } from './components/AuthForm'
 import type { Note, NoteColor } from '@stickies/core'
 
 export default function App() {
+  // Force local mode (skip Supabase auth)
+  const [forceLocal, setForceLocal] = useState(false)
+
   // Auth state
   const {
     user,
@@ -33,7 +36,7 @@ export default function App() {
   const { results, loading: searchLoading, search, clear } = useSearch(db)
 
   // Determine which notes system to use
-  const useSupabase = supabaseConfigured && user
+  const useSupabase = supabaseConfigured && user && !forceLocal
   const {
     notes,
     loading: notesLoading,
@@ -143,8 +146,8 @@ export default function App() {
     )
   }
 
-  // Auth required for Supabase mode
-  if (supabaseConfigured && !user) {
+  // Auth required for Supabase mode (unless forceLocal)
+  if (supabaseConfigured && !user && !forceLocal) {
     return (
       <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
         <header className="mb-8 text-center">
@@ -156,6 +159,12 @@ export default function App() {
           onSignUp={signUpWithEmail}
           onOAuth={signInWithOAuth}
         />
+        <button
+          onClick={() => setForceLocal(true)}
+          className="mt-6 text-amber-600 hover:text-amber-800 text-sm underline"
+        >
+          Continue locally without account
+        </button>
       </div>
     )
   }
