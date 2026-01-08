@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 interface Props {
   onSearch: (query: string) => void
   onClear: () => void
   loading?: boolean
+  inputRef?: React.RefObject<HTMLInputElement>
 }
 
-export function SearchBar({ onSearch, onClear, loading }: Props) {
+export function SearchBar({ onSearch, onClear, loading, inputRef: externalRef }: Props) {
   const [query, setQuery] = useState('')
+  const internalRef = useRef<HTMLInputElement>(null)
+  const inputRef = externalRef || internalRef
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +28,7 @@ export function SearchBar({ onSearch, onClear, loading }: Props) {
     <form onSubmit={handleSubmit} className="flex gap-2">
       <div className="relative flex-1">
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}

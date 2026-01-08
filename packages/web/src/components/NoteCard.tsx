@@ -1,10 +1,24 @@
 import { useState } from 'react'
 import type { Note, NoteColor } from '@stickies/core'
+import { useNoteHover } from '../hooks/useKeyboardShortcuts'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { SnoozePicker } from '@/components/SnoozePicker'
+import { MoreHorizontal, Archive, Clock, RotateCcw, Trash2, Inbox } from 'lucide-react'
 
 interface Props {
   note: Note
   onUpdate?: (id: string, updates: { content?: string; color?: NoteColor }) => void
   onDelete?: (id: string) => void
+  onArchive?: (id: string) => void
+  onSnooze?: (id: string, date: Date) => void
+  onActivate?: (id: string) => void
+  onUnarchive?: (id: string) => void
   span?: 1 | 2
   isDragging?: boolean
   isDragOver?: boolean
@@ -40,10 +54,21 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
+const stateLabels: Record<string, { label: string; color: string }> = {
+  inbox: { label: 'Inbox', color: 'bg-amber-600' },
+  active: { label: 'Active', color: 'bg-green-600' },
+  snoozed: { label: 'Snoozed', color: 'bg-blue-600' },
+  archived: { label: 'Archived', color: 'bg-gray-500' },
+}
+
 export function NoteCard({
   note,
   onUpdate,
   onDelete,
+  onArchive,
+  onSnooze,
+  onActivate,
+  onUnarchive,
   span = 1,
   isDragging,
   isDragOver,
@@ -57,6 +82,20 @@ export function NoteCard({
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(note.content)
   const [showColors, setShowColors] = useState(false)
+  const [snoozePickerOpen, setSnoozePickerOpen] = useState(false)
+
+  // Keyboard shortcut hover tracking
+  const { handleMouseEnter, handleMouseLeave } = useNoteHover(
+    note.id,
+    onArchive ? () => onArchive(note.id) : undefined,
+    onSnooze ? () => setSnoozePickerOpen(true) : undefined
+  )
+
+  const handleSnoozeSelect = (date: Date) => {
+    onSnooze?.(note.id, date)
+  }
+
+  const stateInfo = stateLabels[note.state] || stateLabels.active
 
   const spanClass = span === 2 ? 'col-span-2' : ''
   const bgColor = colorMap[note.color] || colorMap.yellow
@@ -77,6 +116,7 @@ export function NoteCard({
 
   return (
     <div
+      data-note-id={note.id}
       draggable={!isEditing}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -84,8 +124,11 @@ export function NoteCard({
       onDragLeave={onDragLeave}
       onDragOver={onDragOver}
       onDrop={onDrop}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`${bgColor} ${spanClass} ${dragClass} ${dragOverClass} p-4 rounded-lg shadow-md
-                  hover:shadow-lg transition-all relative group cursor-grab active:cursor-grabbing`}
+                  hover:shadow-lg transition-all duration-200 relative group cursor-grab active:cursor-grabbing
+                  animate-in fade-in slide-in-from-bottom-2`}
     >
       {isEditing ? (
         <div>
@@ -160,17 +203,69 @@ export function NoteCard({
         )}
       </div>
 
-      {onDelete && (
-        <button
-          onClick={() => onDelete(note.id)}
-          className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100
-                     hover:bg-black/10 transition-opacity"
-        >
-          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
+      {/* State indicator */}
+      <div className="absolute top-2 right-10">
+        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${stateInfo.color} opacity-0 group-hover:opacity-100 transition-opacity`}>
+          {stateInfo.label}
+        </span>
+      </div>
+
+      {/* Actions dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100
+                       hover:bg-black/10 transition-opacity"
+          >
+            <MoreHorizontal className="w-4 h-4 text-gray-600" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          {note.state !== 'active' && onActivate && (
+            <DropdownMenuItem onClick={() => onActivate(note.id)}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Make Active
+            </DropdownMenuItem>
+          )}
+          {note.state !== 'archived' && onArchive && (
+            <DropdownMenuItem onClick={() => onArchive(note.id)}>
+              <Archive className="mr-2 h-4 w-4" />
+              Archive
+            </DropdownMenuItem>
+          )}
+          {note.state === 'archived' && onUnarchive && (
+            <DropdownMenuItem onClick={() => onUnarchive(note.id)}>
+              <Inbox className="mr-2 h-4 w-4" />
+              Move to Inbox
+            </DropdownMenuItem>
+          )}
+          {note.state !== 'snoozed' && onSnooze && (
+            <SnoozePicker
+              trigger={
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Snooze...
+                </DropdownMenuItem>
+              }
+              onSelect={handleSnoozeSelect}
+              open={snoozePickerOpen}
+              onOpenChange={setSnoozePickerOpen}
+            />
+          )}
+          {onDelete && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDelete(note.id)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

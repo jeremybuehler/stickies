@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
+import type { SearchResult } from '@stickies/core'
+import { RelatedNotes } from './RelatedNotes'
 
 interface Props {
   onSubmit: (content: string, source?: 'text' | 'voice') => void
   disabled?: boolean
+  inputRef?: React.RefObject<HTMLTextAreaElement>
+  // Context matching props
+  relatedNotes?: SearchResult[]
+  relatedLoading?: boolean
+  onInputChange?: (value: string) => void
+  onLinkNote?: (noteId: string) => void
+  onViewNote?: (noteId: string) => void
 }
 
 // Web Speech API types
@@ -47,11 +56,22 @@ declare global {
   }
 }
 
-export function NoteInput({ onSubmit, disabled }: Props) {
+export function NoteInput({
+  onSubmit,
+  disabled,
+  inputRef: externalRef,
+  relatedNotes = [],
+  relatedLoading = false,
+  onInputChange,
+  onLinkNote,
+  onViewNote,
+}: Props) {
   const [value, setValue] = useState('')
   const [isListening, setIsListening] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(false)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [showRelated, setShowRelated] = useState(true)
+  const internalRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = externalRef || internalRef
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   useEffect(() => {
@@ -65,6 +85,14 @@ export function NoteInput({ onSubmit, disabled }: Props) {
     if (!trimmed) return
     onSubmit(trimmed, source)
     setValue('')
+    onInputChange?.('')
+    setShowRelated(true)
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value
+    setValue(newValue)
+    onInputChange?.(newValue)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -135,7 +163,7 @@ export function NoteInput({ onSubmit, disabled }: Props) {
       <textarea
         ref={inputRef}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         disabled={disabled || isListening}
         placeholder={isListening ? 'Listening...' : "What's on your mind?"}
@@ -177,6 +205,17 @@ export function NoteInput({ onSubmit, disabled }: Props) {
           </svg>
         </button>
       </div>
+
+      {/* Related notes suggestions */}
+      {showRelated && (relatedNotes.length > 0 || relatedLoading) && (
+        <RelatedNotes
+          results={relatedNotes}
+          loading={relatedLoading}
+          onLinkNote={onLinkNote}
+          onViewNote={onViewNote}
+          onDismiss={() => setShowRelated(false)}
+        />
+      )}
     </div>
   )
 }

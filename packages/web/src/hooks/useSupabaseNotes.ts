@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase, type DbNote } from '../lib/supabase'
-import type { Note, NoteColor } from '@stickies/core'
+import type { Note, NoteColor, NoteState } from '@stickies/core'
 
 function dbNoteToNote(dbNote: DbNote): Note {
   return {
@@ -10,6 +10,10 @@ function dbNoteToNote(dbNote: DbNote): Note {
     source: dbNote.source,
     rawTranscript: dbNote.raw_transcript ?? undefined,
     position: dbNote.position,
+    state: dbNote.state ?? 'active',
+    snoozedUntil: dbNote.snoozed_until ? new Date(dbNote.snoozed_until).getTime() : undefined,
+    lastSurfacedAt: dbNote.last_surfaced_at ? new Date(dbNote.last_surfaced_at).getTime() : undefined,
+    linkedTo: dbNote.linked_to ?? undefined,
     createdAt: new Date(dbNote.created_at).getTime(),
     updatedAt: new Date(dbNote.updated_at).getTime(),
   }
@@ -71,6 +75,7 @@ export function useSupabaseNotes() {
           source,
           raw_transcript: rawTranscript ?? null,
           position: newPosition,
+          state: 'inbox',
           user_id: user.user?.id,
         })
 
@@ -156,6 +161,119 @@ export function useSupabaseNotes() {
     [refresh]
   )
 
+  // State transition functions
+  const archive = useCallback(
+    async (id: string) => {
+      if (!supabase) return
+
+      try {
+        const { error: updateError } = await supabase
+          .from('notes')
+          .update({ state: 'archived', snoozed_until: null })
+          .eq('id', id)
+
+        if (updateError) throw updateError
+        await refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to archive note'))
+      }
+    },
+    [refresh]
+  )
+
+  const snooze = useCallback(
+    async (id: string, until: Date) => {
+      if (!supabase) return
+
+      try {
+        const { error: updateError } = await supabase
+          .from('notes')
+          .update({ state: 'snoozed', snoozed_until: until.toISOString() })
+          .eq('id', id)
+
+        if (updateError) throw updateError
+        await refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to snooze note'))
+      }
+    },
+    [refresh]
+  )
+
+  const activate = useCallback(
+    async (id: string) => {
+      if (!supabase) return
+
+      try {
+        const { error: updateError } = await supabase
+          .from('notes')
+          .update({ state: 'active', snoozed_until: null })
+          .eq('id', id)
+
+        if (updateError) throw updateError
+        await refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to activate note'))
+      }
+    },
+    [refresh]
+  )
+
+  const unarchive = useCallback(
+    async (id: string) => {
+      if (!supabase) return
+
+      try {
+        const { error: updateError } = await supabase
+          .from('notes')
+          .update({ state: 'inbox' })
+          .eq('id', id)
+
+        if (updateError) throw updateError
+        await refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to unarchive note'))
+      }
+    },
+    [refresh]
+  )
+
+  const processSnoozed = useCallback(async () => {
+    if (!supabase) return []
+
+    const now = new Date().toISOString()
+
+    try {
+      // Find snoozed notes that are due
+      const { data: dueNotes, error: fetchError } = await supabase
+        .from('notes')
+        .select('id')
+        .eq('state', 'snoozed')
+        .lte('snoozed_until', now)
+
+      if (fetchError) throw fetchError
+      if (!dueNotes?.length) return []
+
+      // Move them back to inbox
+      const { error: updateError } = await supabase
+        .from('notes')
+        .update({ state: 'inbox', snoozed_until: null })
+        .in('id', dueNotes.map((n) => n.id))
+
+      if (updateError) throw updateError
+      await refresh()
+
+      return dueNotes.map((n) => n.id)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to process snoozed notes'))
+      return []
+    }
+  }, [refresh])
+
+  const getInboxCount = useCallback(() => {
+    return notes.filter((n) => n.state === 'inbox').length
+  }, [notes])
+
   // Initial fetch
   useEffect(() => {
     refresh()
@@ -181,5 +299,22 @@ export function useSupabaseNotes() {
     }
   }, [refresh])
 
-  return { notes, loading, error, add, update, remove, reorder, refresh, isConnected: !!supabase }
+  return {
+    notes,
+    loading,
+    error,
+    add,
+    update,
+    remove,
+    reorder,
+    refresh,
+    // Smart Inbox functions
+    archive,
+    snooze,
+    activate,
+    unarchive,
+    processSnoozed,
+    getInboxCount,
+    isConnected: !!supabase,
+  }
 }

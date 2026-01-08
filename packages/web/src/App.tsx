@@ -1,61 +1,224 @@
-import { useEffect, useState, useRef } from 'react'
-import { useDatabase } from './hooks/useDatabase'
-import { useNotes } from './hooks/useNotes'
-import { useSupabaseNotes } from './hooks/useSupabaseNotes'
-import { useAuth } from './hooks/useAuth'
-import { useSearch } from './hooks/useSearch'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { useUser, SignIn, UserButton } from '@clerk/clerk-react'
+import { useNeonNotes } from './hooks/useNeonNotes'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useDigestSettings } from './hooks/useDigestSettings'
+import { useToast } from '@/hooks/useToast'
 import { NoteInput } from './components/NoteInput'
 import { NoteCard } from './components/NoteCard'
-import { SearchBar } from './components/SearchBar'
-import { AuthForm } from './components/AuthForm'
-import type { Note, NoteColor } from '@stickies/core'
+import { ViewToggle, type ViewFilter } from './components/ViewToggle'
+import { OnboardingHint } from './components/OnboardingHint'
+import { EmptyState } from './components/EmptyState'
+import { KeyboardShortcutsHint } from './components/KeyboardShortcutsHint'
+import { DailyDigest } from './components/DailyDigest'
+import { SettingsSheet } from './components/SettingsSheet'
+import { Toaster } from '@/components/ui/toaster'
+import { ToastAction } from '@/components/ui/toast'
+import { Settings } from 'lucide-react'
+import type { Note, NoteColor } from '../../../db/schema'
+
+// Check if Neon is configured
+const isNeonConfigured = !!import.meta.env.VITE_DATABASE_URL
+const isClerkConfigured = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 export default function App() {
-  // Force local mode (skip Supabase auth)
-  const [forceLocal, setForceLocal] = useState(false)
+  const { user, isLoaded, isSignedIn } = useUser()
 
-  // Auth state
-  const {
-    user,
-    loading: authLoading,
-    signInWithEmail,
-    signUpWithEmail,
-    signInWithOAuth,
-    signOut,
-    isConfigured: supabaseConfigured,
-  } = useAuth()
-
-  // Local database (fallback)
-  const { db, loading: dbLoading, error: dbError } = useDatabase()
-  const localNotes = useNotes(db)
-
-  // Supabase notes (when configured and authenticated)
-  const supabaseNotes = useSupabaseNotes()
-
-  // Search (only works with local db for now)
-  const { results, loading: searchLoading, search, clear } = useSearch(db)
-
-  // Determine which notes system to use
-  const useSupabase = supabaseConfigured && user && !forceLocal
+  // Notes from Neon
   const {
     notes,
     loading: notesLoading,
+    error: notesError,
     add,
     update,
     remove,
     reorder,
     refresh,
-  } = useSupabase ? supabaseNotes : localNotes
+    archive,
+    snooze,
+    activate,
+    unarchive,
+    processSnoozed,
+    getInboxCount,
+    getRediscoveryCandidate,
+    markAsSurfaced,
+    searchNotes,
+  } = useNeonNotes()
+
+  // Toast
+  const { toast } = useToast()
+
+  // View filter
+  const [viewFilter, setViewFilter] = useState<ViewFilter>('all')
+
+  // Inbox count
+  const inboxCount = getInboxCount()
+
+  // Digest settings
+  const {
+    settings: digestSettings,
+    setDigestEnabled,
+    setDigestTime,
+    setRediscoveryFrequency,
+  } = useDigestSettings()
+
+  // Settings and Digest sheet state
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [digestOpen, setDigestOpen] = useState(false)
+  const [rediscoveryNote, setRediscoveryNote] = useState<Note | null>(null)
+  const [dueReminders, setDueReminders] = useState<Note[]>([])
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Note[] | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const dragCounter = useRef(0)
 
-  useEffect(() => {
-    if (!useSupabase && db) localNotes.refresh()
-  }, [db, useSupabase])
+  // Refs for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const noteInputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Initialize keyboard shortcuts (desktop only)
+  useKeyboardShortcuts({
+    searchInputRef,
+    noteInputRef,
+    enabled: true,
+  })
+
+  // Process snoozed notes on app load
+  useEffect(() => {
+    const processAndNotify = async () => {
+      const wokenNoteIds = await processSnoozed()
+      if (wokenNoteIds && wokenNoteIds.length > 0) {
+        toast({
+          title: `${wokenNoteIds.length} snoozed note${wokenNoteIds.length > 1 ? 's' : ''} woke up`,
+          description: 'Check your inbox to review them.',
+        })
+      }
+    }
+    if (isSignedIn) {
+      processAndNotify()
+    }
+  }, [isSignedIn, processSnoozed, toast])
+
+  // Check if daily digest should be shown
+  useEffect(() => {
+    if (!digestSettings.digestEnabled || !isSignedIn) return
+
+    const checkDigestTime = async () => {
+      const now = new Date()
+      const [targetHour, targetMinute] = digestSettings.digestTime.split(':').map(Number)
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      const targetTotalMinutes = targetHour * 60 + targetMinute
+      const currentTotalMinutes = currentHour * 60 + currentMinute
+      const diff = Math.abs(currentTotalMinutes - targetTotalMinutes)
+
+      if (diff <= 5) {
+        const lastShownKey = 'stickies-last-digest-shown'
+        const lastShown = localStorage.getItem(lastShownKey)
+        const today = now.toDateString()
+
+        if (lastShown !== today) {
+          setDigestOpen(true)
+          localStorage.setItem(lastShownKey, today)
+
+          // Fetch rediscovery note
+          if (digestSettings.rediscoveryFrequency !== 'never') {
+            const candidate = await getRediscoveryCandidate()
+            if (candidate) {
+              setRediscoveryNote(candidate)
+              await markAsSurfaced(candidate.id)
+            }
+          }
+
+          // Get due reminders
+          const todayStart = new Date()
+          todayStart.setHours(0, 0, 0, 0)
+          const todayEnd = new Date()
+          todayEnd.setHours(23, 59, 59, 999)
+
+          const due = notes.filter(
+            (n) =>
+              n.state === 'snoozed' &&
+              n.snoozedUntil &&
+              n.snoozedUntil >= todayStart &&
+              n.snoozedUntil <= todayEnd
+          )
+          setDueReminders(due)
+        }
+      }
+    }
+
+    checkDigestTime()
+    const interval = setInterval(checkDigestTime, 60000)
+    return () => clearInterval(interval)
+  }, [digestSettings, notes, isSignedIn, getRediscoveryCandidate, markAsSurfaced])
+
+  // Handler to manually show digest
+  const handleShowDigest = useCallback(async () => {
+    if (digestSettings.rediscoveryFrequency !== 'never') {
+      const candidate = await getRediscoveryCandidate()
+      if (candidate) {
+        setRediscoveryNote(candidate)
+        await markAsSurfaced(candidate.id)
+      }
+    }
+
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
+
+    const due = notes.filter(
+      (n) =>
+        n.state === 'snoozed' &&
+        n.snoozedUntil &&
+        n.snoozedUntil >= todayStart &&
+        n.snoozedUntil <= todayEnd
+    )
+    setDueReminders(due)
+    setDigestOpen(true)
+  }, [notes, digestSettings.rediscoveryFrequency, getRediscoveryCandidate, markAsSurfaced])
+
+  const handleViewInbox = useCallback(() => {
+    setViewFilter('inbox')
+  }, [])
+
+  const handleDismissRediscovery = useCallback(() => {
+    setRediscoveryNote(null)
+  }, [])
+
+  // Search handler
+  const handleSearch = useCallback(
+    async (query: string) => {
+      setSearchQuery(query)
+      if (!query.trim()) {
+        setSearchResults(null)
+        return
+      }
+      setSearchLoading(true)
+      try {
+        const results = await searchNotes(query)
+        setSearchResults(results)
+      } finally {
+        setSearchLoading(false)
+      }
+    },
+    [searchNotes]
+  )
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('')
+    setSearchResults(null)
+  }, [])
+
+  // Drag handlers
   const handleDragStart = (e: React.DragEvent, noteId: string) => {
     setDraggedId(noteId)
     e.dataTransfer.effectAllowed = 'move'
@@ -99,8 +262,8 @@ export default function App() {
       return
     }
 
-    const currentNotes = results ? results.map((r) => r.note) : notes
-    const noteIds = currentNotes.map((n) => n.id)
+    const displayNotes = getDisplayNotes()
+    const noteIds = displayNotes.map((n) => n.id)
     const fromIndex = noteIds.indexOf(draggedId)
     const toIndex = noteIds.indexOf(targetId)
 
@@ -115,13 +278,86 @@ export default function App() {
     setDragOverId(null)
   }
 
-  // Handle add with correct signature for Supabase vs local
+  // Add note handler
   const handleAdd = async (content: string, source: 'text' | 'voice' = 'text') => {
     await add(content, source)
   }
 
-  // Loading states
-  if (authLoading || (!useSupabase && dbLoading)) {
+  // Action handlers
+  const handleArchive = async (id: string) => {
+    await archive(id)
+    toast({
+      title: 'Note archived',
+      action: (
+        <ToastAction altText="Undo" onClick={() => unarchive(id)}>
+          Undo
+        </ToastAction>
+      ),
+    })
+  }
+
+  const handleSnooze = async (id: string, date: Date) => {
+    await snooze(id, date)
+    const formattedDate = date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+    toast({
+      title: `Note snoozed until ${formattedDate}`,
+    })
+  }
+
+  const handleActivate = async (id: string) => {
+    await activate(id)
+  }
+
+  const handleUnarchive = async (id: string) => {
+    await unarchive(id)
+  }
+
+  const handleViewRelatedNote = useCallback(
+    (noteId: string) => {
+      const noteElement = document.querySelector(`[data-note-id="${noteId}"]`)
+      if (noteElement) {
+        noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        noteElement.classList.add('ring-2', 'ring-amber-500')
+        setTimeout(() => {
+          noteElement.classList.remove('ring-2', 'ring-amber-500')
+        }, 2000)
+      } else {
+        setViewFilter('all')
+        toast({
+          title: 'Switched to All view',
+          description: 'Note might have been filtered.',
+        })
+      }
+    },
+    [toast]
+  )
+
+  const handleLinkNote = useCallback(
+    (noteId: string) => {
+      toast({
+        title: 'Note linked',
+        description: 'This note has been linked.',
+      })
+    },
+    [toast]
+  )
+
+  const getSpan = (content: string): 1 | 2 => {
+    return content.length > 80 ? 2 : 1
+  }
+
+  const getDisplayNotes = () => {
+    if (searchResults) return searchResults
+    if (viewFilter === 'all') return notes.filter((n) => n.state !== 'archived')
+    return notes.filter((n) => n.state === viewFilter)
+  }
+
+  // Loading state
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center">
         <div className="flex items-center gap-2 text-amber-600">
@@ -135,100 +371,148 @@ export default function App() {
     )
   }
 
-  // Error state (only for local db)
-  if (!useSupabase && dbError) {
+  // Not configured
+  if (!isNeonConfigured) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="p-8 text-red-600">
-          Failed to load database: {dbError.message}
+      <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-3xl font-bold text-amber-900 mb-4">Stickies</h1>
+          <p className="text-amber-700 mb-4">Database not configured.</p>
+          <p className="text-sm text-amber-600">
+            Set <code className="bg-amber-100 px-1 rounded">VITE_DATABASE_URL</code> to your Neon connection string.
+          </p>
         </div>
       </div>
     )
   }
 
-  // Auth required for Supabase mode (unless forceLocal)
-  if (supabaseConfigured && !user && !forceLocal) {
+  // Auth required
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-amber-900">Stickies</h1>
           <p className="text-amber-700">Quick notes, AI organized</p>
         </header>
-        <AuthForm
-          onSignIn={signInWithEmail}
-          onSignUp={signUpWithEmail}
-          onOAuth={signInWithOAuth}
-        />
-        <button
-          onClick={() => setForceLocal(true)}
-          className="mt-6 text-amber-600 hover:text-amber-800 text-sm underline"
-        >
-          Continue locally without account
-        </button>
+        {isClerkConfigured ? (
+          <SignIn />
+        ) : (
+          <div className="text-center max-w-md">
+            <p className="text-amber-700 mb-4">Authentication not configured.</p>
+            <p className="text-sm text-amber-600">
+              Set <code className="bg-amber-100 px-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> to enable sign in.
+            </p>
+          </div>
+        )}
       </div>
     )
   }
 
-  const displayNotes = results ? results.map((r) => r.note) : notes
-
-  const getSpan = (content: string): 1 | 2 => {
-    return content.length > 80 ? 2 : 1
+  // Error state
+  if (notesError) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="p-8 text-red-600">Failed to load notes: {notesError.message}</div>
+      </div>
+    )
   }
+
+  const displayNotes = getDisplayNotes()
 
   return (
     <div className="min-h-screen bg-amber-50">
       <div className="max-w-2xl mx-auto p-4 pb-20">
         <header className="mb-6 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-amber-900">Stickies</h1>
-            <p className="text-amber-700">Quick notes, AI organized</p>
-          </div>
-          {user && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-amber-600">{user.email}</span>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-amber-900">Stickies</h1>
+              <p className="text-amber-700">Quick notes, AI organized</p>
+            </div>
+            {viewFilter !== 'inbox' && inboxCount > 0 && (
               <button
-                onClick={signOut}
-                className="text-sm text-amber-500 hover:text-amber-700"
+                onClick={() => setViewFilter('inbox')}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 text-white text-sm font-medium rounded-full hover:bg-amber-600 transition-colors animate-in fade-in duration-200"
+                title="Go to Inbox"
               >
-                Sign out
+                <span className="sr-only">Inbox:</span>
+                {inboxCount}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-2.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <UserButton afterSignOutUrl="/" />
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-lg hover:bg-amber-200/50 transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5 text-amber-700" />
+            </button>
+          </div>
+        </header>
+
+        <OnboardingHint hasNotes={notes.length > 0} />
+
+        <div className="mb-4">
+          <NoteInput onSubmit={handleAdd} disabled={notesLoading} inputRef={noteInputRef} />
+        </div>
+
+        <div className="mb-4">
+          <ViewToggle value={viewFilter} onChange={setViewFilter} inboxCount={inboxCount} />
+        </div>
+
+        {/* Simple search bar */}
+        <div className="mb-6">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search notes..."
+            className="w-full px-4 py-2 bg-white/80 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+          />
+          {searchResults && (
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-sm text-amber-600">
+                Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+              </p>
+              <button onClick={handleClearSearch} className="text-sm text-amber-500 hover:text-amber-700">
+                Clear
               </button>
             </div>
           )}
-          {!supabaseConfigured && (
-            <span className="text-xs text-amber-400 bg-amber-100 px-2 py-1 rounded">
-              Offline mode
-            </span>
-          )}
-        </header>
-
-        <div className="mb-4">
-          <NoteInput onSubmit={handleAdd} disabled={notesLoading} />
         </div>
 
-        {!useSupabase && (
-          <div className="mb-6">
-            <SearchBar onSearch={search} onClear={clear} loading={searchLoading} />
-          </div>
-        )}
-
-        {results && (
-          <p className="text-sm text-amber-600 mb-4">
-            Found {results.length} result{results.length !== 1 ? 's' : ''}
-          </p>
-        )}
-
         {displayNotes.length === 0 ? (
-          <p className="text-center text-amber-400 py-12">
-            {results ? 'No matching notes found.' : 'No notes yet. Jot something down!'}
-          </p>
+          <EmptyState viewFilter={viewFilter} isSearchResult={!!searchResults} />
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {displayNotes.map((note) => (
               <NoteCard
                 key={note.id}
-                note={note}
+                note={{
+                  ...note,
+                  createdAt: note.createdAt instanceof Date ? note.createdAt.getTime() : note.createdAt,
+                  updatedAt: note.updatedAt instanceof Date ? note.updatedAt.getTime() : note.updatedAt,
+                  snoozedUntil: note.snoozedUntil instanceof Date ? note.snoozedUntil.getTime() : note.snoozedUntil ?? undefined,
+                  lastSurfacedAt: note.lastSurfacedAt instanceof Date ? note.lastSurfacedAt.getTime() : note.lastSurfacedAt ?? undefined,
+                  linkedTo: note.linkedTo ?? undefined,
+                  rawTranscript: note.rawTranscript ?? undefined,
+                }}
                 onUpdate={update}
                 onDelete={remove}
+                onArchive={handleArchive}
+                onSnooze={handleSnooze}
+                onActivate={handleActivate}
+                onUnarchive={handleUnarchive}
                 span={getSpan(note.content)}
                 isDragging={draggedId === note.id}
                 isDragOver={dragOverId === note.id}
@@ -243,6 +527,64 @@ export default function App() {
           </div>
         )}
       </div>
+      <KeyboardShortcutsHint />
+      <Toaster />
+
+      <SettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        digestEnabled={digestSettings.digestEnabled}
+        digestTime={digestSettings.digestTime}
+        rediscoveryFrequency={digestSettings.rediscoveryFrequency}
+        onDigestEnabledChange={setDigestEnabled}
+        onDigestTimeChange={setDigestTime}
+        onRediscoveryFrequencyChange={setRediscoveryFrequency}
+      />
+
+      <DailyDigest
+        open={digestOpen}
+        onOpenChange={setDigestOpen}
+        inboxCount={inboxCount}
+        dueReminders={dueReminders.map((n) => ({
+          ...n,
+          createdAt: n.createdAt instanceof Date ? n.createdAt.getTime() : n.createdAt,
+          updatedAt: n.updatedAt instanceof Date ? n.updatedAt.getTime() : n.updatedAt,
+          snoozedUntil: n.snoozedUntil instanceof Date ? n.snoozedUntil.getTime() : n.snoozedUntil ?? undefined,
+          lastSurfacedAt: n.lastSurfacedAt instanceof Date ? n.lastSurfacedAt.getTime() : n.lastSurfacedAt ?? undefined,
+          linkedTo: n.linkedTo ?? undefined,
+          rawTranscript: n.rawTranscript ?? undefined,
+        }))}
+        rediscoveryNote={
+          rediscoveryNote
+            ? {
+                ...rediscoveryNote,
+                createdAt:
+                  rediscoveryNote.createdAt instanceof Date
+                    ? rediscoveryNote.createdAt.getTime()
+                    : rediscoveryNote.createdAt,
+                updatedAt:
+                  rediscoveryNote.updatedAt instanceof Date
+                    ? rediscoveryNote.updatedAt.getTime()
+                    : rediscoveryNote.updatedAt,
+                snoozedUntil:
+                  rediscoveryNote.snoozedUntil instanceof Date
+                    ? rediscoveryNote.snoozedUntil.getTime()
+                    : rediscoveryNote.snoozedUntil ?? undefined,
+                lastSurfacedAt:
+                  rediscoveryNote.lastSurfacedAt instanceof Date
+                    ? rediscoveryNote.lastSurfacedAt.getTime()
+                    : rediscoveryNote.lastSurfacedAt ?? undefined,
+                linkedTo: rediscoveryNote.linkedTo ?? undefined,
+                rawTranscript: rediscoveryNote.rawTranscript ?? undefined,
+              }
+            : null
+        }
+        onViewInbox={handleViewInbox}
+        onSnoozeNote={handleSnooze}
+        onArchiveNote={handleArchive}
+        onActivateNote={handleActivate}
+        onDismissRediscovery={handleDismissRediscovery}
+      />
     </div>
   )
 }

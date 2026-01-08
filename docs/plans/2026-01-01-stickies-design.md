@@ -234,16 +234,35 @@ stickies/
 
 | Purpose | Choice |
 |---------|--------|
-| UI | React + Tailwind |
-| Local DB | sql.js (browser), better-sqlite3 (native) |
+| UI | React + Tailwind + shadcn/ui |
+| Local DB | sql.js (browser) - **migrating to Neon** |
+| Cloud Sync | Supabase (PostgreSQL) |
 | Embeddings | Transformers.js (local) |
-| Transcription | Whisper API |
-| Clustering | HDBSCAN |
-| LLM | Ollama local or OpenAI API |
-| Build | Vite + Turborepo |
+| Transcription | Web Speech API (browser native) |
+| Clustering | K-means |
+| Build | Vite + PWA |
 | Monorepo | pnpm workspaces |
-| Desktop | Tauri |
-| Mobile | Capacitor |
+| Desktop | Tauri (planned) |
+| Mobile | Capacitor (planned) |
+
+### Database Migration: sql.js → Neon
+
+**Current State:** sql.js (SQLite in WebAssembly) with optional Supabase sync
+
+**Planned:** Migrate to [Neon](https://neon.tech) serverless PostgreSQL
+
+**Rationale:**
+- Native multi-device support without custom sync
+- Database branching for dev/preview
+- Scale-to-zero cost efficiency
+- PostgreSQL compatibility with existing schema
+
+**Migration Tasks:**
+1. Set up Neon project
+2. Create Drizzle ORM schema
+3. Implement offline cache + sync layer
+4. Update core database abstraction
+5. Migrate existing users
 
 ## MVP Scope
 

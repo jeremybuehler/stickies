@@ -19,7 +19,21 @@
       "Bash(pnpm exec tsc:*)",
       "Skill(superpowers:systematic-debugging)",
       "mcp__playwright__browser_type",
-      "mcp__plugin_superpowers-chrome_chrome__use_browser"
+      "mcp__plugin_superpowers-chrome_chrome__use_browser",
+      "Bash(git -C /Users/buehlerdev/code/stickies add .gitignore)",
+      "Bash(git -C /Users/buehlerdev/code/stickies commit -m \"$\\(cat <<''EOF''\nchore: add .claude/settings.local.json to gitignore\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/buehlerdev/code/stickies push origin main)",
+      "Bash(git -C /Users/buehlerdev/code/stickies status packages/web/.env)",
+      "Bash(git -C /Users/buehlerdev/code/stickies add vercel.json packages/web/src/App.tsx)",
+      "Bash(git -C /Users/buehlerdev/code/stickies commit -m \"$\\(cat <<''EOF''\nfix: configure Vercel to build core package first\n\nAdd vercel.json to run root build command which builds\n@stickies/core before @stickies/web.\n\nAlso adds \"Continue locally\" button to skip auth.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/buehlerdev/code/stickies add:*)",
+      "Bash(git -C /Users/buehlerdev/code/stickies commit -m \"$\\(cat <<''EOF''\nfix: build core package in web build script\n\nEnsures @stickies/core is built before web package regardless\nof which directory Vercel runs from.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/buehlerdev/code/stickies commit -m \"$\\(cat <<''EOF''\nfix: correct Vercel output directory path\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(pnpm build:*)",
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__press_key",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm --filter @stickies/web add:*)"
     ]
   }
 }

@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 43 100% 96%; /* amber-50 */
+    --foreground: 28 73% 20%; /* amber-900 */
+    --card: 43 100% 96%;
+    --card-foreground: 28 73% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 28 73% 20%;
+    --primary: 37 91% 55%; /* amber-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 48 96% 89%; /* amber-100 */
+    --secondary-foreground: 28 73% 20%;
+    --muted: 48 96% 89%;
+    --muted-foreground: 32 81% 29%; /* amber-700 */
+    --accent: 48 96% 89%;
+    --accent-foreground: 28 73% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 92% 78%; /* amber-200 */
+    --input: 36 92% 78%;
+    --ring: 37 91% 55%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
+
 body {
   @apply bg-amber-50 min-h-screen;
 }

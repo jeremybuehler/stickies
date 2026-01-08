@@ -11,6 +11,11 @@ create table public.notes (
   source text not null default 'text' check (source in ('text', 'voice')),
   raw_transcript text,
   position integer not null default 0,
+  -- Smart Inbox fields
+  state text not null default 'inbox' check (state in ('inbox', 'active', 'snoozed', 'archived')),
+  snoozed_until timestamptz,
+  last_surfaced_at timestamptz,
+  linked_to uuid references public.notes(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   user_id uuid references auth.users(id) on delete cascade
@@ -44,6 +49,12 @@ create index notes_user_id_idx on public.notes(user_id);
 
 -- Index for ordering by position
 create index notes_position_idx on public.notes(position);
+
+-- Index for state filtering
+create index notes_state_idx on public.notes(state);
+
+-- Index for snoozed notes due check
+create index notes_snoozed_until_idx on public.notes(snoozed_until) where state = 'snoozed';
 
 -- Function to update updated_at timestamp
 create or replace function public.handle_updated_at()

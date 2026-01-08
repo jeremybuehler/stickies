@@ -6,12 +6,24 @@
     "dev": "pnpm --filter @stickies/web dev",
     "build": "pnpm --filter @stickies/core build && pnpm --filter @stickies/web build",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.8",
     "typescript": "^5.3.3"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "protobufjs"]
+    "onlyBuiltDependencies": [
+      "sharp",
+      "protobufjs"
+    ]
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "drizzle-orm": "^0.45.1"
   }
 }

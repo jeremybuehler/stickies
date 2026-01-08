@@ -99,6 +99,32 @@ export async function createDatabase(): Promise<Database> {
     // Column already exists, ignore
   }
 
+  // Migration: add Smart Inbox columns
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN state TEXT DEFAULT 'active'`)
+    // Existing notes are considered 'active' since they've been interacted with
+  } catch {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN snoozed_until INTEGER`)
+  } catch {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN last_surfaced_at INTEGER`)
+  } catch {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.run(`ALTER TABLE notes ADD COLUMN linked_to TEXT`)
+  } catch {
+    // Column already exists, ignore
+  }
+
   db.run(`
     CREATE TABLE IF NOT EXISTS embeddings (
       note_id TEXT PRIMARY KEY,

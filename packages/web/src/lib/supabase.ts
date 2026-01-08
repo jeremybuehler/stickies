@@ -18,6 +18,11 @@ export type DbNote = {
   source: 'text' | 'voice'
   raw_transcript: string | null
   position: number
+  // Smart Inbox fields
+  state: 'inbox' | 'active' | 'snoozed' | 'archived'
+  snoozed_until: string | null
+  last_surfaced_at: string | null
+  linked_to: string | null
   created_at: string
   updated_at: string
   user_id: string

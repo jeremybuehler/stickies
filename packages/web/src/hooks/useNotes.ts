@@ -6,6 +6,12 @@ import {
   deleteNote,
   reorderNotes,
   saveDatabase,
+  archiveNote,
+  snoozeNote,
+  activateNote,
+  unsnoozeNote,
+  processSnoozedNotes,
+  getInboxCount,
   type Database,
   type Note,
   type NoteColor,
@@ -68,5 +74,76 @@ export function useNotes(db: Database | null) {
     [db, refresh]
   )
 
-  return { notes, loading, add, update, remove, reorder, refresh }
+  // Smart Inbox functions
+  const archive = useCallback(
+    async (id: string) => {
+      if (!db) return
+      archiveNote(db, id)
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
+  const snooze = useCallback(
+    async (id: string, until: Date) => {
+      if (!db) return
+      snoozeNote(db, id, until.getTime())
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
+  const activate = useCallback(
+    async (id: string) => {
+      if (!db) return
+      activateNote(db, id)
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
+  const unarchive = useCallback(
+    async (id: string) => {
+      if (!db) return
+      unsnoozeNote(db, id)
+      await saveDatabase(db)
+      refresh()
+    },
+    [db, refresh]
+  )
+
+  const processSnoozed = useCallback(async () => {
+    if (!db) return []
+    const wokenNotes = processSnoozedNotes(db)
+    if (wokenNotes.length > 0) {
+      await saveDatabase(db)
+      refresh()
+    }
+    return wokenNotes.map((n) => n.id)
+  }, [db, refresh])
+
+  const getInboxCountFn = useCallback(() => {
+    if (!db) return 0
+    return getInboxCount(db)
+  }, [db])
+
+  return {
+    notes,
+    loading,
+    add,
+    update,
+    remove,
+    reorder,
+    refresh,
+    // Smart Inbox functions
+    archive,
+    snooze,
+    activate,
+    unarchive,
+    processSnoozed,
+    getInboxCount: getInboxCountFn,
+  }
 }
