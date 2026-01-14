@@ -101,23 +101,23 @@ export function DailyDigest({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="bg-amber-50 max-h-[80vh] overflow-y-auto">
+      <SheetContent side="bottom" className="bg-background max-h-[80vh] overflow-y-auto">
         <SheetHeader className="text-left">
-          <SheetTitle className="text-amber-900 text-xl">Daily Digest</SheetTitle>
-          <SheetDescription className="text-amber-700">
+          <SheetTitle className="text-foreground text-xl">Daily Digest</SheetTitle>
+          <SheetDescription className="text-muted-foreground">
             Your morning overview of notes and reminders
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
           {/* Inbox Section */}
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-200">
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-border">
             <div className="flex items-center gap-2 mb-3">
-              <Inbox className="w-5 h-5 text-amber-600" />
-              <h3 className="font-semibold text-amber-900">Inbox</h3>
+              <Inbox className="w-5 h-5 text-muted-foreground" />
+              <h3 className="font-semibold text-foreground">Inbox</h3>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-amber-700">
+              <p className="text-muted-foreground">
                 {inboxCount === 0
                   ? 'Your inbox is empty!'
                   : `You have ${inboxCount} note${inboxCount !== 1 ? 's' : ''} in your inbox`}
@@ -127,7 +127,7 @@ export function DailyDigest({
                   variant="outline"
                   size="sm"
                   onClick={handleViewInbox}
-                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                  className="border-border text-muted-foreground hover:bg-secondary"
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   View Inbox
@@ -138,10 +138,10 @@ export function DailyDigest({
 
           {/* Due Reminders Section */}
           {dueReminders.length > 0 && (
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-200">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-border">
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-amber-900">Due Today</h3>
+                <h3 className="font-semibold text-foreground">Due Today</h3>
                 <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                   {dueReminders.length}
                 </span>
@@ -192,11 +192,11 @@ export function DailyDigest({
 
           {/* Rediscovery Section */}
           {rediscoveryNote && (
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-200">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-border">
               <div className="flex items-center gap-2 mb-3">
                 <Archive className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-amber-900">Rediscovery</h3>
-                <span className="text-xs text-amber-500">From the archives</span>
+                <h3 className="font-semibold text-foreground">Rediscovery</h3>
+                <span className="text-xs text-primary">From the archives</span>
               </div>
               <div className={`${colorMap[rediscoveryNote.color]} p-3 rounded-lg`}>
                 <p className="text-gray-800 text-sm mb-1">
@@ -239,7 +239,7 @@ export function DailyDigest({
 
           {/* Empty State */}
           {inboxCount === 0 && dueReminders.length === 0 && !rediscoveryNote && (
-            <div className="text-center py-8 text-amber-600">
+            <div className="text-center py-8 text-muted-foreground">
               <p>All caught up! No new items today.</p>
             </div>
           )}
@@ -248,7 +248,7 @@ export function DailyDigest({
         <SheetFooter className="mt-6">
           <Button
             onClick={() => onOpenChange(false)}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-white"
           >
             Dismiss
           </Button>

@@ -169,8 +169,8 @@ export function NoteInput({
         placeholder={isListening ? 'Listening...' : "What's on your mind?"}
         className={`w-full p-4 pr-24 text-lg rounded-xl border-2
                    focus:outline-none resize-none
-                   bg-white shadow-sm placeholder:text-amber-300
-                   ${isListening ? 'border-red-400 bg-red-50' : 'border-amber-200 focus:border-amber-400'}`}
+                   bg-white shadow-sm placeholder:text-muted-foreground/50
+                   ${isListening ? 'border-red-400 bg-red-50' : 'border-border focus:border-primary'}`}
         rows={2}
       />
       <div className="absolute right-3 bottom-3 flex gap-2">
@@ -195,7 +195,7 @@ export function NoteInput({
           onClick={() => handleSubmit(isListening ? 'voice' : 'text')}
           disabled={disabled || !value.trim()}
           className="p-2 rounded-lg
-                     bg-amber-400 text-white hover:bg-amber-500
+                     bg-primary text-white hover:bg-background0
                      disabled:opacity-50 disabled:cursor-not-allowed
                      transition-colors"
         >

@@ -12,14 +12,14 @@ interface ViewToggleProps {
 export function ViewToggle({ value, onChange, inboxCount }: ViewToggleProps) {
   return (
     <Tabs value={value} onValueChange={(v) => onChange(v as ViewFilter)}>
-      <TabsList className="bg-amber-100">
+      <TabsList className="bg-secondary">
         <TabsTrigger value="all" className="data-[state=active]:bg-white">
           All
         </TabsTrigger>
         <TabsTrigger value="inbox" className="data-[state=active]:bg-white">
           Inbox
           {inboxCount > 0 && (
-            <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-medium text-white">
+            <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-background0 px-1.5 text-xs font-medium text-white">
               {inboxCount}
             </span>
           )}

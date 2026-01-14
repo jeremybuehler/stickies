@@ -20,9 +20,11 @@ import type { Note, NoteColor } from '../../../db/schema'
 // Check if Neon is configured
 const isNeonConfigured = !!import.meta.env.VITE_DATABASE_URL
 const isClerkConfigured = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const isDev = import.meta.env.DEV
 
 export default function App() {
   const { user, isLoaded, isSignedIn } = useUser()
+  const [devBypass, setDevBypass] = useState(false)
 
   // Notes from Neon
   const {
@@ -43,7 +45,7 @@ export default function App() {
     getRediscoveryCandidate,
     markAsSurfaced,
     searchNotes,
-  } = useNeonNotes()
+  } = useNeonNotes(devBypass)
 
   // Toast
   const { toast } = useToast()
@@ -321,9 +323,9 @@ export default function App() {
       const noteElement = document.querySelector(`[data-note-id="${noteId}"]`)
       if (noteElement) {
         noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        noteElement.classList.add('ring-2', 'ring-amber-500')
+        noteElement.classList.add('ring-2', 'ring-primary')
         setTimeout(() => {
-          noteElement.classList.remove('ring-2', 'ring-amber-500')
+          noteElement.classList.remove('ring-2', 'ring-primary')
         }, 2000)
       } else {
         setViewFilter('all')
@@ -359,8 +361,8 @@ export default function App() {
   // Loading state
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-amber-600">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -374,33 +376,45 @@ export default function App() {
   // Not configured
   if (!isNeonConfigured) {
     return (
-      <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <h1 className="text-3xl font-bold text-amber-900 mb-4">Stickies</h1>
-          <p className="text-amber-700 mb-4">Database not configured.</p>
-          <p className="text-sm text-amber-600">
-            Set <code className="bg-amber-100 px-1 rounded">VITE_DATABASE_URL</code> to your Neon connection string.
+          <h1 className="text-3xl font-bold text-foreground mb-4">Stickies</h1>
+          <p className="text-muted-foreground mb-4">Database not configured.</p>
+          <p className="text-sm text-muted-foreground">
+            Set <code className="bg-secondary px-1 rounded">VITE_DATABASE_URL</code> to your Neon connection string.
           </p>
         </div>
       </div>
     )
   }
 
-  // Auth required
-  if (!isSignedIn) {
+  // Auth required (unless dev bypass)
+  if (!isSignedIn && !devBypass) {
     return (
-      <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-amber-900">Stickies</h1>
-          <p className="text-amber-700">Quick notes, AI organized</p>
+          <h1 className="text-4xl font-bold text-foreground">Stickies</h1>
+          <p className="text-muted-foreground">Quick notes, AI organized</p>
         </header>
         {isClerkConfigured ? (
-          <SignIn />
+          <div className="flex flex-col items-center">
+            <SignIn />
+            {/* Cloudflare Turnstile CAPTCHA placeholder - required for bot protection */}
+            <div id="clerk-captcha" className="mt-4" />
+            {isDev && (
+              <button
+                onClick={() => setDevBypass(true)}
+                className="mt-6 text-primary hover:text-foreground text-sm underline"
+              >
+                Skip auth (dev mode)
+              </button>
+            )}
+          </div>
         ) : (
           <div className="text-center max-w-md">
-            <p className="text-amber-700 mb-4">Authentication not configured.</p>
-            <p className="text-sm text-amber-600">
-              Set <code className="bg-amber-100 px-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> to enable sign in.
+            <p className="text-muted-foreground mb-4">Authentication not configured.</p>
+            <p className="text-sm text-muted-foreground">
+              Set <code className="bg-secondary px-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> to enable sign in.
             </p>
           </div>
         )}
@@ -411,7 +425,7 @@ export default function App() {
   // Error state
   if (notesError) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="p-8 text-red-600">Failed to load notes: {notesError.message}</div>
       </div>
     )
@@ -420,18 +434,18 @@ export default function App() {
   const displayNotes = getDisplayNotes()
 
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 pb-20">
         <header className="mb-6 flex justify-between items-start">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-amber-900">Stickies</h1>
-              <p className="text-amber-700">Quick notes, AI organized</p>
+              <h1 className="text-3xl font-bold text-foreground">Stickies</h1>
+              <p className="text-muted-foreground">Quick notes, AI organized</p>
             </div>
             {viewFilter !== 'inbox' && inboxCount > 0 && (
               <button
                 onClick={() => setViewFilter('inbox')}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 text-white text-sm font-medium rounded-full hover:bg-amber-600 transition-colors animate-in fade-in duration-200"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-background0 text-white text-sm font-medium rounded-full hover:bg-primary/90 transition-colors animate-in fade-in duration-200"
                 title="Go to Inbox"
               >
                 <span className="sr-only">Inbox:</span>
@@ -451,10 +465,10 @@ export default function App() {
             <UserButton afterSignOutUrl="/" />
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-2 rounded-lg hover:bg-amber-200/50 transition-colors"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
               title="Settings"
             >
-              <Settings className="w-5 h-5 text-amber-700" />
+              <Settings className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </header>
@@ -477,14 +491,14 @@ export default function App() {
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search notes..."
-            className="w-full px-4 py-2 bg-white/80 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full px-4 py-2 bg-white/80 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           {searchResults && (
             <div className="mt-2 flex items-center justify-between">
-              <p className="text-sm text-amber-600">
+              <p className="text-sm text-muted-foreground">
                 Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
               </p>
-              <button onClick={handleClearSearch} className="text-sm text-amber-500 hover:text-amber-700">
+              <button onClick={handleClearSearch} className="text-sm text-primary hover:text-muted-foreground">
                 Clear
               </button>
             </div>

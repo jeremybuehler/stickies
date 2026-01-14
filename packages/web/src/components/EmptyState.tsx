@@ -38,11 +38,11 @@ export function EmptyState({ viewFilter, isSearchResult }: EmptyStateProps) {
   if (isSearchResult) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in duration-300">
-        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-          <FileText className="w-6 h-6 text-amber-500" />
+        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-4">
+          <FileText className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-amber-600 font-medium">No matching notes found</p>
-        <p className="text-amber-400 text-sm mt-1">Try a different search term</p>
+        <p className="text-muted-foreground font-medium">No matching notes found</p>
+        <p className="text-muted-foreground text-sm mt-1">Try a different search term</p>
       </div>
     )
   }
@@ -52,11 +52,11 @@ export function EmptyState({ viewFilter, isSearchResult }: EmptyStateProps) {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in duration-300">
-      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-        <Icon className="w-6 h-6 text-amber-500" />
+      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-4">
+        <Icon className="w-6 h-6 text-primary" />
       </div>
-      <p className="text-amber-600 font-medium">{config.title}</p>
-      <p className="text-amber-400 text-sm mt-1">{config.description}</p>
+      <p className="text-muted-foreground font-medium">{config.title}</p>
+      <p className="text-muted-foreground text-sm mt-1">{config.description}</p>
     </div>
   )
 }

@@ -10,13 +10,16 @@ if (databaseUrl) {
   initDb(databaseUrl)
 }
 
-export function useNeonNotes() {
+const DEV_USER_ID = 'dev-user-local'
+
+export function useNeonNotes(devBypass = false) {
   const { user, isLoaded } = useUser()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const userId = user?.id
+  // Use dev user ID if bypass is enabled, otherwise use Clerk user ID
+  const userId = devBypass ? DEV_USER_ID : user?.id
 
   // Fetch all notes
   const refresh = useCallback(async () => {
@@ -35,13 +38,16 @@ export function useNeonNotes() {
 
   // Initial fetch
   useEffect(() => {
-    if (isLoaded && userId) {
+    if (devBypass && userId) {
+      // Dev bypass mode - fetch immediately
       refresh()
-    } else if (isLoaded && !userId) {
+    } else if (isLoaded && userId) {
+      refresh()
+    } else if (isLoaded && !userId && !devBypass) {
       setNotes([])
       setLoading(false)
     }
-  }, [isLoaded, userId, refresh])
+  }, [isLoaded, userId, refresh, devBypass])
 
   // Add a new note
   const add = useCallback(

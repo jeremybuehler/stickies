@@ -33,7 +33,7 @@ export function AuthForm({ onSignIn, onSignUp, onOAuth }: Props) {
 
   return (
     <div className="max-w-sm mx-auto p-6 bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold text-amber-900 mb-4 text-center">
+      <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
         {isSignUp ? 'Create Account' : 'Sign In'}
       </h2>
 
@@ -44,7 +44,7 @@ export function AuthForm({ onSignIn, onSignUp, onOAuth }: Props) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full p-3 border-2 border-amber-200 rounded-lg focus:border-amber-400 focus:outline-none"
+            className="w-full p-3 border-2 border-border rounded-lg focus:border-primary focus:outline-none"
             required
           />
         </div>
@@ -54,7 +54,7 @@ export function AuthForm({ onSignIn, onSignUp, onOAuth }: Props) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full p-3 border-2 border-amber-200 rounded-lg focus:border-amber-400 focus:outline-none"
+            className="w-full p-3 border-2 border-border rounded-lg focus:border-primary focus:outline-none"
             required
             minLength={6}
           />
@@ -65,7 +65,7 @@ export function AuthForm({ onSignIn, onSignUp, onOAuth }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full p-3 bg-amber-400 text-white font-semibold rounded-lg hover:bg-amber-500 disabled:opacity-50 transition-colors"
+          className="w-full p-3 bg-primary text-white font-semibold rounded-lg hover:bg-background0 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
         </button>
@@ -95,7 +95,7 @@ export function AuthForm({ onSignIn, onSignUp, onOAuth }: Props) {
         {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
         <button
           onClick={() => setIsSignUp(!isSignUp)}
-          className="text-amber-600 hover:underline"
+          className="text-muted-foreground hover:underline"
         >
           {isSignUp ? 'Sign In' : 'Sign Up'}
         </button>

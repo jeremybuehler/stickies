@@ -55,7 +55,7 @@ function formatTime(timestamp: number): string {
 }
 
 const stateLabels: Record<string, { label: string; color: string }> = {
-  inbox: { label: 'Inbox', color: 'bg-amber-600' },
+  inbox: { label: 'Inbox', color: 'bg-primary' },
   active: { label: 'Active', color: 'bg-green-600' },
   snoozed: { label: 'Snoozed', color: 'bg-blue-600' },
   archived: { label: 'Archived', color: 'bg-gray-500' },
@@ -100,7 +100,7 @@ export function NoteCard({
   const spanClass = span === 2 ? 'col-span-2' : ''
   const bgColor = colorMap[note.color] || colorMap.yellow
   const dragClass = isDragging ? 'opacity-50 scale-95' : ''
-  const dragOverClass = isDragOver ? 'ring-2 ring-amber-500 ring-offset-2' : ''
+  const dragOverClass = isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''
 
   const handleSave = () => {
     if (editContent.trim() && editContent !== note.content) {

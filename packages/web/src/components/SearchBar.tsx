@@ -33,11 +33,11 @@ export function SearchBar({ onSearch, onClear, loading, inputRef: externalRef }:
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search notes..."
-          className="w-full pl-10 pr-4 py-2 rounded-lg border-2 border-amber-200
-                     focus:border-amber-400 focus:outline-none bg-white"
+          className="w-full pl-10 pr-4 py-2 rounded-lg border-2 border-border
+                     focus:border-primary focus:outline-none bg-white"
         />
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -54,7 +54,7 @@ export function SearchBar({ onSearch, onClear, loading, inputRef: externalRef }:
         <button
           type="button"
           onClick={handleClear}
-          className="px-3 py-2 text-amber-600 hover:text-amber-800"
+          className="px-3 py-2 text-muted-foreground hover:text-foreground"
         >
           Clear
         </button>
@@ -62,8 +62,8 @@ export function SearchBar({ onSearch, onClear, loading, inputRef: externalRef }:
       <button
         type="submit"
         disabled={loading || !query.trim()}
-        className="px-4 py-2 bg-amber-400 text-white rounded-lg
-                   hover:bg-amber-500 disabled:opacity-50 transition-colors"
+        className="px-4 py-2 bg-primary text-white rounded-lg
+                   hover:bg-background0 disabled:opacity-50 transition-colors"
       >
         {loading ? 'Searching...' : 'Search'}
       </button>

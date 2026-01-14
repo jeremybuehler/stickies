@@ -12,7 +12,7 @@ interface RelatedNotesProps {
 }
 
 const colorMap: Record<NoteColor, string> = {
-  yellow: 'bg-amber-100 border-amber-300',
+  yellow: 'bg-secondary border-border',
   pink: 'bg-pink-100 border-pink-300',
   blue: 'bg-blue-100 border-blue-300',
   green: 'bg-green-100 border-green-300',
@@ -34,7 +34,7 @@ export function RelatedNotes({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mt-2">
       <div className="flex items-center justify-between">
-        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900 transition-colors">
+        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <ChevronDown
             className={`w-3 h-3 transition-transform ${isOpen ? '' : '-rotate-90'}`}
           />
@@ -45,7 +45,7 @@ export function RelatedNotes({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="p-1 text-amber-500 hover:text-amber-700 transition-colors"
+            className="p-1 text-primary hover:text-muted-foreground transition-colors"
             title="Dismiss suggestions"
           >
             <X className="w-3 h-3" />
@@ -56,8 +56,8 @@ export function RelatedNotes({
       <CollapsibleContent>
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-amber-600">
-              <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               Searching...
             </div>
           ) : (
@@ -114,7 +114,7 @@ function RelatedNoteCard({ result, onLink, onView }: RelatedNoteCardProps) {
                 e.stopPropagation()
                 onLink(note.id)
               }}
-              className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-200/50 rounded transition-colors"
+              className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded transition-colors"
               title="Link to this note"
             >
               <Link2 className="w-3.5 h-3.5" />

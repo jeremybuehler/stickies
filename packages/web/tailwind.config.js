@@ -5,11 +5,25 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Terracotta palette
+        terracotta: {
+          50: '#fdf6f3',
+          100: '#fbeae4',
+          200: '#f8d5c9',
+          300: '#f2b6a1',
+          400: '#e98c6e',
+          500: '#dc6b4a', // primary terracotta
+          600: '#c9523a',
+          700: '#a8412f',
+          800: '#8a382b',
+          900: '#723228',
+          950: '#3d1712',
+        },
         sticky: {
-          yellow: '#fbbf24',
-          pink: '#f472b6',
-          blue: '#60a5fa',
-          green: '#4ade80',
+          yellow: '#e9a857', // warm gold
+          pink: '#d4736a',   // terracotta pink
+          blue: '#7ba3a8',   // muted teal
+          green: '#8db580',  // sage green
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
